@@ -6,6 +6,9 @@ import time
 import os
 import socket
 import requests
+import os
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager  
 
 # ✅ Configure network settings
 os.environ['PYTHONHTTPSVERIFY'] = '0'
@@ -63,64 +66,9 @@ def get_chrome_version():
     except:
         return None
 
-def download_chromedriver():
-    version = get_chrome_version()
-    major = version.split('.')[0] if version else "141"
-    os.makedirs("drivers", exist_ok=True)
-    binary = "chromedriver.exe" if platform.system() == "Windows" else "chromedriver"
-    path = os.path.abspath(os.path.join("drivers", binary))
-
-    if os.path.exists(path):
-        print(f"✓ ChromeDriver already exists at: {path}")
-        return path
-
-    try:
-        print("📥 Downloading ChromeDriver...")
-        url_latest = f"https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_{major}"
-        r = requests.get(url_latest, timeout=10)
-        ver_full = r.text.strip() if r.status_code == 200 else "141.0.7390.65"
-
-        sys_map = {
-            "Windows": "win64",
-            "Darwin": "mac-arm64" if "arm" in platform.machine().lower() else "mac-x64",
-            "Linux": "linux64"
-        }
-        suffix = sys_map.get(platform.system(), "win64")
-        dl = f"https://storage.googleapis.com/chrome-for-testing-public/{ver_full}/{suffix}/chromedriver-{suffix}.zip"
-
-        z = requests.get(dl, timeout=30)
-        zip_path = os.path.join("drivers", "chromedriver.zip")
-        with open(zip_path, "wb") as f:
-            f.write(z.content)
-
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            zip_ref.extractall("drivers")
-
-        os.remove(zip_path)
-
-        for root, dirs, files in os.walk("drivers"):
-            for file in files:
-                if file.startswith("chromedriver") and (file.endswith(".exe") or file == "chromedriver"):
-                    extracted_path = os.path.join(root, file)
-                    if root != "drivers":
-                        shutil.move(extracted_path, path)
-
-                    if platform.system() != "Windows":
-                        os.chmod(path, 0o755)
-
-                    print(f"✓ ChromeDriver downloaded successfully at: {path}")
-                    return path
-
-        return path
-    except Exception as e:
-        print(f"❌ Driver download error: {e}")
-        return None
-
 def setup_selenium_driver():
     """Setup and return Chrome driver with stealth mode"""
-    driver_path = download_chromedriver()
-    if not driver_path or not os.path.exists(driver_path):
-        raise Exception(f"ChromeDriver not found at: {driver_path}")
+
 
     user_agents = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -152,7 +100,13 @@ def setup_selenium_driver():
     }
     opts.add_experimental_option("prefs", prefs)
 
-    service = Service(executable_path=driver_path)
+    if os.path.exists("/usr/bin/chromium"):  # Streamlit Cloud
+      opts.binary_location = "/usr/bin/chromium"
+      service = Service("/usr/bin/chromedriver")
+    else:  # Local
+      from webdriver_manager.chrome import ChromeDriverManager
+      service = Service(ChromeDriverManager().install())
+
     driver = webdriver.Chrome(service=service, options=opts)
     
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")

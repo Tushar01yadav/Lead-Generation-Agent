@@ -142,6 +142,7 @@ def setup_selenium_driver():
     selected_ua = random.choice(user_agents)
     
     opts = webdriver.ChromeOptions()
+    opts.add_argument("--headless")
     opts.add_argument(f'--user-agent={selected_ua}')
     opts.add_argument("--disable-blink-features=AutomationControlled")
     opts.add_argument("--no-sandbox")

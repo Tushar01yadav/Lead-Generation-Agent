@@ -1,5 +1,7 @@
 # Web Framework
 streamlit>=1.28.0
+selenium
+webdriver-manager
 
 # HTTP Requests
 requests>=2.31.0

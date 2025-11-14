@@ -22,16 +22,6 @@ import sqlite3
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import shutil
-
-# 👇 Check if Chrome or Chromium is installed in the environment
-chrome_path = shutil.which("google-chrome") or shutil.which("chromium-browser")
-st.write("🧠 Chrome path detected:", chrome_path or "❌ No Chrome found")
-
-# You can also log it to console for debugging
-print("Chrome path:", chrome_path or "No Chrome found")
-
-
 os.environ['STREAMLIT_DEBUG'] = '1'
 # Replace the hardcoded TRACKING_SERVER_URL line with:
 
@@ -3035,9 +3025,19 @@ with tab1:
                         try:
                             # Call the extraction function
                             enriched_df = extract_with_apollo(csv_to_enrich, apollo_api_key)
+                            if enriched_df is not None and not enriched_df.empty:
+                                if 'Email' in enriched_df.columns:
+                                    enriched_df['Email'] = enriched_df['Email'].replace('', pd.NA)
+                                    enriched_df['Email'] = enriched_df['Email'].replace(' ', pd.NA)
+                                    enriched_df['Email'] = enriched_df['Email'].replace('None', pd.NA)
+                                if 'Phone' in enriched_df.columns:
+                                    enriched_df['Phone'] = enriched_df['Phone'].replace('', pd.NA)
+                                    enriched_df['Phone'] = enriched_df['Phone'].replace(' ', pd.NA)
+                                    enriched_df['Phone'] = enriched_df['Phone'].replace('None', pd.NA)
                             
                             # Store enriched dataframe in session state
                             st.session_state.enriched_df = enriched_df
+                          
                             
                             log_to_debug(f"✅ Email extraction completed successfully")
                             st.success(f"✅ Contact extraction completed! Processed {len(enriched_df)} records")
